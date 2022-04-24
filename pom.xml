@@ -12,6 +12,7 @@
 
     <modules>
         <module>homework-base</module>
+        <module>hwmn1</module>
     </modules>
 
     <build>
