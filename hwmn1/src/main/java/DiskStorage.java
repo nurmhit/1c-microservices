@@ -15,6 +15,7 @@ public class DiskStorage<K, V> implements KeyValueStorage<K, V>{
     HashMap <K, V> inMemoryHashMap;
     int newChanges;
     private final int modificationsBufferLimit = 3;
+    boolean closed;
     InputStream inputStream;
     OutputStream outputStream;
     ObjectOutputStream objWriter;
@@ -55,10 +56,13 @@ public class DiskStorage<K, V> implements KeyValueStorage<K, V>{
             }
         }
         newChanges = 0;
+        closed = false;
     }
 
     @Override
     public V read(K key) {
+        if(closed)
+            throw new MalformedDataException("Closed storage");
         if(exists(key)){
             return inMemoryHashMap.get(key);
         }
@@ -67,11 +71,15 @@ public class DiskStorage<K, V> implements KeyValueStorage<K, V>{
 
     @Override
     public boolean exists(K key) {
+        if(closed)
+            throw new MalformedDataException("Closed storage");
         return inMemoryHashMap.containsKey(key);
     }
 
     @Override
     public void write(K key, V value) {
+        if(closed)
+            throw new MalformedDataException("Closed storage");
         inMemoryHashMap.put(key, value);
         newChanges++;
         if(newChanges > modificationsBufferLimit){
@@ -81,6 +89,8 @@ public class DiskStorage<K, V> implements KeyValueStorage<K, V>{
 
     @Override
     public void delete(K key) {
+        if(closed)
+            throw new MalformedDataException("Closed storage");
         inMemoryHashMap.remove(key);
         newChanges++;
         if(newChanges > modificationsBufferLimit){
@@ -90,18 +100,23 @@ public class DiskStorage<K, V> implements KeyValueStorage<K, V>{
 
     @Override
     public Iterator<K> readKeys() {
+        if(closed)
+            throw new MalformedDataException("Closed storage");
         return inMemoryHashMap.keySet().iterator();
     }
 
     @Override
     public int size() {
+        if(closed)
+            throw new MalformedDataException("Closed storage");
         return inMemoryHashMap.size();
     }
 
     @Override
     public void flush() {
+        if(closed)
+            throw new MalformedDataException("Closed storage");
         try {
-
             objWriter.writeObject(inMemoryHashMap);
             objWriter.flush();
             newChanges = 0;
@@ -116,5 +131,6 @@ public class DiskStorage<K, V> implements KeyValueStorage<K, V>{
         flush();
         objWriter.close();
         outputStream.close();
+        closed = true;
     }
 }
